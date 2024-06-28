@@ -6,18 +6,23 @@ import tempfile
 import shutil
 from pygments.lexers import guess_lexer_for_filename
 from pygments.util import ClassNotFound
-from collections import Counter
+from collections import Counter, defaultdict
 import re
+import ast
+import chardet
+import hashlib
 
 def guess_language(file_path):
     try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            content = file.read()
+        with open(file_path, 'rb') as file:
+            raw_content = file.read()
+        encoding = chardet.detect(raw_content)['encoding']
+        content = raw_content.decode(encoding)
         lexer = guess_lexer_for_filename(file_path, content)
         return lexer.name
     except ClassNotFound:
         return "Unknown"
-    except UnicodeDecodeError:
+    except Exception:
         return "Binary"
 
 def get_file_size(file_path):
@@ -34,6 +39,44 @@ def scan_todos(file_path):
         pass
     return todos
 
+def analyze_python_complexity(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            content = file.read()
+        tree = ast.parse(content)
+        function_complexities = []
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                complexity = 1
+                for child in ast.walk(node):
+                    if isinstance(child, (ast.If, ast.While, ast.For, ast.AsyncFor, ast.ExceptHandler, ast.Assert)):
+                        complexity += 1
+                    elif isinstance(child, ast.BoolOp):
+                        complexity += len(child.values) - 1
+                function_complexities.append((node.name, complexity))
+        return function_complexities
+    except Exception:
+        return []
+
+def detect_code_duplication(files_content, chunk_size=6):
+    chunk_hashes = defaultdict(list)
+    duplicates = []
+
+    for file_path, content in files_content:
+        lines = content.splitlines()
+        for i in range(len(lines) - chunk_size + 1):
+            chunk = '\n'.join(lines[i:i+chunk_size])
+            chunk_hash = hashlib.md5(chunk.encode()).hexdigest()
+            
+            for other_file, other_line in chunk_hashes[chunk_hash]:
+                if other_file != file_path:
+                    duplicates.append((file_path, other_file, i+1, other_line+1, chunk))
+                    break
+            
+            chunk_hashes[chunk_hash].append((file_path, i))
+
+    return duplicates
+
 def combine_code_files_to_txt(folder_path, output_file):
     temp_output = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', encoding='utf-8')
     try:
@@ -46,6 +89,7 @@ def combine_code_files_to_txt(folder_path, output_file):
             outfile.write("3. Highlight any important functions, classes, or variables.\n")
             outfile.write("4. Note any potential improvements or best practices that could be applied.\n")
             outfile.write("5. Pay attention to any TODO or FIXME comments and their implications.\n")
+            outfile.write("6. For Python files, consider the complexity metrics provided.\n")
             outfile.write("After analyzing all files, provide an overall summary of the project structure and purpose.\n\n")
             outfile.write("Here are the files and analysis information:\n\n")
 
@@ -53,6 +97,8 @@ def combine_code_files_to_txt(folder_path, output_file):
             language_counter = Counter()
             large_files = []
             all_todos = []
+            all_complexities = []
+            files_content = []
 
             for root, dirs, files in os.walk(folder_path):
                 for filename in files:
@@ -74,6 +120,8 @@ def combine_code_files_to_txt(folder_path, output_file):
 
                         relative_path = os.path.relpath(file_path, folder_path)
                         with open(file_path, 'r', encoding='utf-8', errors='ignore') as infile:
+                            content = infile.read()
+                            files_content.append((relative_path, content))
                             outfile.write(f"Filename: {relative_path}\n")
                             outfile.write(f"Language: {language}\n")
                             outfile.write(f"File Size: {file_size} bytes\n")
@@ -81,8 +129,15 @@ def combine_code_files_to_txt(folder_path, output_file):
                                 outfile.write("TODO/FIXME comments:\n")
                                 for line_num, comment in todos:
                                     outfile.write(f"  Line {line_num}: {comment}\n")
+                            if language == "Python":
+                                complexities = analyze_python_complexity(file_path)
+                                if complexities:
+                                    outfile.write("Function Complexities:\n")
+                                    for func, complexity in complexities:
+                                        outfile.write(f"  {func}: {complexity}\n")
+                                    all_complexities.extend([(relative_path, *c) for c in complexities])
                             outfile.write("Content:\n")
-                            outfile.write(infile.read())
+                            outfile.write(content)
                             outfile.write("\n\nPlease analyze the above file and provide your insights.\n\n")
 
             outfile.write(f"Total number of code files: {file_count}\n\n")
@@ -105,6 +160,25 @@ def combine_code_files_to_txt(folder_path, output_file):
                     outfile.write(f"{os.path.relpath(file_path, folder_path)} (Line {line_num}): {comment}\n")
                 outfile.write("\n")
 
+            if all_complexities:
+                outfile.write("Top 10 Most Complex Functions:\n")
+                for file_path, func, complexity in sorted(all_complexities, key=lambda x: x[2], reverse=True)[:10]:
+                    outfile.write(f"{file_path} - {func}: Complexity {complexity}\n")
+                outfile.write("\n")
+
+            duplicates = detect_code_duplication(files_content)
+            if duplicates:
+                outfile.write("Potential Code Duplications:\n")
+                for file1, file2, line1, line2, chunk in duplicates[:10]:  # Limit to top 10 duplications
+                    outfile.write(f"Similar code found in:\n")
+                    outfile.write(f"  1. {file1} (line {line1})\n")
+                    outfile.write(f"  2. {file2} (line {line2})\n")
+                    outfile.write("Duplicated code:\n")
+                    outfile.write(chunk + "\n\n")
+                if len(duplicates) > 10:
+                    outfile.write(f"... and {len(duplicates) - 10} more duplications\n")
+                outfile.write("\n")
+
             outfile.write("Now that you've analyzed all the files, please provide an overall summary of the project. Consider:\n")
             outfile.write("1. The main purpose of the project\n")
             outfile.write("2. The programming languages used and their distribution in the project\n")
@@ -112,7 +186,9 @@ def combine_code_files_to_txt(folder_path, output_file):
             outfile.write("4. Any overarching patterns or design principles used\n")
             outfile.write("5. The project structure, including the use of subdirectories\n")
             outfile.write("6. Insights from the language statistics, large files, and TODO/FIXME comments\n")
-            outfile.write("7. Suggestions for overall improvement or optimization\n")
+            outfile.write("7. Observations on code complexity and potential areas for refactoring\n")
+            outfile.write("8. Suggestions for addressing code duplications, if any\n")
+            outfile.write("9. Overall suggestions for improvement or optimization\n")
 
         # Ensure the directory exists
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -131,7 +207,7 @@ class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
         self.master = master
-        self.master.title("LLMBridge: Enhanced Code Analyzer")
+        self.master.title("LLMBridge: Comprehensive Code Analyzer")
         self.master.geometry("500x250")
         self.pack(fill=tk.BOTH, expand=True)
         self.create_widgets()
