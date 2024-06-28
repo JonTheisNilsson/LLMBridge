@@ -7,8 +7,6 @@ class DuplicationDetector:
     
     @staticmethod
     def detect_code_duplication(files_content: List[Tuple[str, str, str, int]]) -> List[Tuple[str, str, int, int, str]]:
-        print("start of duplicate detection")
-        
         chunk_hashes = defaultdict(list)
         duplicates = []
 
@@ -30,5 +28,4 @@ class DuplicationDetector:
             print(f"Error in duplicate detection: {str(e)}")
             # You might want to log this error or handle it in a way that's appropriate for your application
         
-        print(f"end of duplicate detection. Found {len(duplicates)} potential duplicates.")
         return duplicates

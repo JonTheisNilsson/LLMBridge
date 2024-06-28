@@ -13,10 +13,8 @@ class CodeAnalyzer:
         self.is_temp_directory = self.folder_path.startswith(FileUtils.normalize_path(os.path.join(os.getcwd(), 'temp')))
 
     def analyze(self, output_file: str) -> int:
-        print("from analyze")
         try:
             analysis_results = self._collect_data()
-            print("after collect data")
             self._write_report(FileUtils.normalize_path(output_file), analysis_results)
             return analysis_results['file_count']
         finally:
@@ -87,7 +85,6 @@ class CodeAnalyzer:
         return False
 
     def _write_report(self, output_file: str, results: Dict[str, Any]):
-        print(f"from writereport: {results}")
         with open(output_file, 'w', encoding='utf-8') as outfile:
             self._write_report_header(outfile)
             self._write_file_analysis(outfile, results['files_content'])
