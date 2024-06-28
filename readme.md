@@ -4,6 +4,9 @@
 
 LLMBridge is a comprehensive, language-agnostic code analysis tool designed to prepare project codebases for analysis by Large Language Models (LLMs). It provides deep insights into your project structure, code complexity, and potential areas for improvement.
 
+This software is made with ClaudeAI. It started as a quick way to restart a chat when working with project with many files. Many of the added features are ClaudeAIs idea of what could be helpful for an LLM. It also wrote most of this readme
+
+
 ## Features
 
 - **Language Agnostic**: Analyzes projects in multiple programming languages.
@@ -17,7 +20,7 @@ LLMBridge is a comprehensive, language-agnostic code analysis tool designed to p
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/llmbridge.git
+   git clone https://github.com/JonTheisNilsson/llmbridge.git
    cd llmbridge
    ```
 
