@@ -1,0 +1,31 @@
+1. Add docstrings to classes and functions:
+
+2. Improve variable naming:
+Some variable names could be more descriptive. 
+
+3. Add comments for complex logic:
+In areas where the logic is complex, add inline comments to explain what's happening. 
+
+4. Update README.md:
+Ensure the README.md file is up-to-date with the new GitHub analysis feature and provides clear instructions for users:
+
+5. Consider creating a CONTRIBUTING.md file:
+This file can provide guidelines for contributors, explaining coding standards, how to set up the development environment, and the process for submitting pull requests.
+
+6. Add type hints consistently:
+Ensure all function parameters and return values have type hints for better code understanding and IDE support.
+
+7. Consider breaking down large methods:
+If any methods are particularly long or complex, consider breaking them into smaller, more focused methods. This can improve readability and maintainability.
+
+
+complexity.py
+duplication.py
+language_detection.py
+todo_scanner.py
+file_operations.py
+github_utils.py
+config.py
+
+ADD: testing, unittesting, test suite
+TODO: follow pip8
