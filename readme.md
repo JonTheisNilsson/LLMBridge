@@ -13,6 +13,7 @@ LLMBridge is a comprehensive, language-agnostic code analysis tool designed to p
 - **Code Duplication Detection**: Highlights potential areas of code duplication.
 - **Complexity Analysis**: For Python files, calculates complexity metrics for functions and classes.
 - **User-Friendly GUI**: Easy-to-use graphical interface for selecting projects and configuring analysis.
+- **Command-Line Interface**: Supports running analysis from the command line for automation and integration into other tools.
 
 ## Installation
 
@@ -29,23 +30,32 @@ LLMBridge is a comprehensive, language-agnostic code analysis tool designed to p
 
 ## Usage
 
-1. Run the program:
-   ```
-   python main.py
-   ```
+### Graphical User Interface (GUI)
 
-2. Use the GUI to select your project folder and specify an output file.
+To run the application with the graphical user interface:
 
-3. Click "Analyze Project" to start the analysis.
+```
+python main.py
+```
 
-4. Once complete, the program will generate a detailed report in the specified output file.
+Use the GUI to select your project folder or enter a GitHub URL, specify an output file, and click "Analyze Project" to start the analysis.
+
+### Command-Line Interface (CLI)
+
+To run the application from the command line:
+
+```
+python main.py --cli --project_path /path/to/your/project --output_file /path/to/output.txt
+```
+
+Replace `/path/to/your/project` with the path to the project you want to analyze, and `/path/to/output.txt` with the desired location for the output file.
 
 ## Project Structure
 
 ```
 llmbridge/
 │
-├── main.py                 # Entry point, runs the GUI
+├── main.py                 # Entry point, handles both GUI and CLI modes
 ├── gui/
 │   ├── __init__.py
 │   └── application.py      # GUI-related code (Application class)
@@ -58,7 +68,8 @@ llmbridge/
 │   └── todo_scanner.py         # TODO/FIXME comment scanner
 ├── utils/
 │   ├── __init__.py
-│   └── file_operations.py  # File-related utility functions
+│   ├── file_operations.py  # File-related utility functions
+│   └── github_utils.py     # GitHub-related utility functions
 ├── config.py               # Configuration settings
 ├── requirements.txt        # Project dependencies
 └── README.md               # This file
@@ -86,7 +97,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - This project was developed as a collaborative effort with AI assistance.
-- Special thanks to the open-source communities behind Pygments and chardet.
+- Special thanks to the open-source communities behind Pygments, chardet, and GitPython.
 
 ---
 
