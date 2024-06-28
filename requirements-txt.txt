@@ -1,0 +1,2 @@
+pygments==2.15.1
+chardet==5.1.0
