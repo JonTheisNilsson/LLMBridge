@@ -1,10 +1,9 @@
-# LLMBridge
-This software is made with ClaudeAI. It started as a quick way to restart a chat when working with project with many files, and have turn into a bit of an experiment. Many of the added features are ClaudeAIs idea of what could be helpful for an LLM. It also wrote most of this readme after this paragraph. It might be overplaying it a little.
+This software is created with ClaudeAI. It started as a quick way to restart a chat when working with project with many files, and have turn into a bit of an experiment. Many of the added features are ClaudeAIs idea of what could be helpful for an LLM. It also wrote most of this readme after this paragraph. It might be overplaying it a little.
 
 ![00005-81533553](https://github.com/JonTheisNilsson/LLMBridge/assets/14968184/afeb0948-e615-493e-806b-f67ecc03fb47)
+# LLMBridge
 
 LLMBridge is a comprehensive, language-agnostic code analysis tool designed to prepare project codebases for analysis by Large Language Models (LLMs). It provides deep insights into your project structure, code complexity, and potential areas for improvement.
-
 
 ## Features
 
@@ -19,7 +18,7 @@ LLMBridge is a comprehensive, language-agnostic code analysis tool designed to p
 
 1. Clone this repository:
    ```
-   git clone https://github.com/JonTheisNilsson/llmbridge.git
+   git clone https://github.com/YourUsername/llmbridge.git
    cd llmbridge
    ```
 
@@ -32,7 +31,7 @@ LLMBridge is a comprehensive, language-agnostic code analysis tool designed to p
 
 1. Run the program:
    ```
-   python llmbridge.py
+   python main.py
    ```
 
 2. Use the GUI to select your project folder and specify an output file.
@@ -40,6 +39,30 @@ LLMBridge is a comprehensive, language-agnostic code analysis tool designed to p
 3. Click "Analyze Project" to start the analysis.
 
 4. Once complete, the program will generate a detailed report in the specified output file.
+
+## Project Structure
+
+```
+llmbridge/
+│
+├── main.py                 # Entry point, runs the GUI
+├── gui/
+│   ├── __init__.py
+│   └── application.py      # GUI-related code (Application class)
+├── analysis/
+│   ├── __init__.py
+│   ├── code_analyzer.py    # Main analysis logic
+│   ├── language_detection.py   # Language detection functions
+│   ├── complexity.py           # Code complexity analysis
+│   ├── duplication.py          # Code duplication detection
+│   └── todo_scanner.py         # TODO/FIXME comment scanner
+├── utils/
+│   ├── __init__.py
+│   └── file_operations.py  # File-related utility functions
+├── config.py               # Configuration settings
+├── requirements.txt        # Project dependencies
+└── README.md               # This file
+```
 
 ## How It Works
 
@@ -67,4 +90,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-*Logo suggestion: A simple bridge icon connecting a code symbol (< / >) on one side to an AI or brain symbol on the other, representing the bridge between code and AI analysis.*
+*Note: Remember to update this README with your specific project details, such as the correct GitHub repository URL.*
