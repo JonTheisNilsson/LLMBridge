@@ -1,11 +1,11 @@
 Project Name: LLMBridge
-Date of Analysis: 2024-06-28 14:02:43
+Date of Analysis: 2024-06-28 17:35:47
 
 Analysis Report:
 
 Filename: config.py
 Language: Python
-File Size: 218 bytes
+File Size: 214 bytes
 Content:
 class Config:
     LARGE_FILE_THRESHOLD = 100000  # 100KB
@@ -15,37 +15,49 @@ class Config:
 
 Filename: main.py
 Language: Python
-File Size: 693 bytes
+File Size: 669 bytes
 Content:
-"""
-LLMBridge: Comprehensive Code Analyzer
-
-This is the entry point for the LLMBridge application. It initializes and runs
-the graphical user interface for the code analysis tool.
-
-The tool allows users to analyze both local projects and GitHub repositories,
-providing insights into code structure, complexity, and potential improvements.
-"""
-
-import tkinter as tk
+import argparse
+import sys
+from analysis.code_analyzer import analyze_project
 from gui.application import Application
+import tkinter as tk
 
-def main():
-    """
-    Initialize and run the L
-    This function creates the main Tkinter window and starts the application's
-    event loop.
-    """
+def run_cli(args):
+    try:
+        file_count = analyze_project(args.project_path, args.output_file)
+        print(f"Analysis complete. {file_count} code files processed.")
+        print(f"Output written to {args.output_file}")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}", file=sys.stderr)
+        sys.exit(1)
+
+def run_gui():
     root = tk.Tk()
     app = Application(master=root)
     app.mainloop()
+
+def main():
+    parser = argparse.ArgumentParser(description="LLMBridge: Comprehensive Code Analyzer")
+    parser.add_argument("--cli", action="store_true", help="Run in CLI mode")
+    parser.add_argument("--project_path", help="Path to the project folder or GitHub URL")
+    parser.add_argument("--output_file", help="Path to the output file")
+
+    args = parser.parse_args()
+
+    if args.cli:
+        if not args.project_path or not args.output_file:
+            parser.error("--project_path and --output_file are required in CLI mode")
+        run_cli(args)
+    else:
+        run_gui()
 
 if __name__ == "__main__":
     main()
 
 Filename: readme.md
 Language: Markdown
-File Size: 4007 bytes
+File Size: 3915 bytes
 Content:
 This software is created with ClaudeAI. It started as a quick way to restart a chat when working with project with many files, and have turn into a bit of an experiment. Many of the added features are ClaudeAIs idea of what could be helpful for an LLM. It also wrote most of this readme after this paragraph. It might be overplaying it a little.
 
@@ -62,6 +74,7 @@ LLMBridge is a comprehensive, language-agnostic code analysis tool designed to p
 - **Code Duplication Detection**: Highlights potential areas of code duplication.
 - **Complexity Analysis**: For Python files, calculates complexity metrics for functions and classes.
 - **User-Friendly GUI**: Easy-to-use graphical interface for selecting projects and configuring analysis.
+- **Command-Line Interface**: Supports running analysis from the command line for automation and integration into other tools.
 
 ## Installation
 
@@ -78,23 +91,32 @@ LLMBridge is a comprehensive, language-agnostic code analysis tool designed to p
 
 ## Usage
 
-1. Run the program:
-   ```
-   python main.py
-   ```
+### Graphical User Interface (GUI)
 
-2. Use the GUI to select your project folder and specify an output file.
+To run the application with the graphical user interface:
 
-3. Click "Analyze Project" to start the analysis.
+```
+python main.py
+```
 
-4. Once complete, the program will generate a detailed report in the specified output file.
+Use the GUI to select your project folder or enter a GitHub URL, specify an output file, and click "Analyze Project" to start the analysis.
+
+### Command-Line Interface (CLI)
+
+To run the application from the command line:
+
+```
+python main.py --cli --project_path /path/to/your/project --output_file /path/to/output.txt
+```
+
+Replace `/path/to/your/project` with the path to the project you want to analyze, and `/path/to/output.txt` with the desired location for the output file.
 
 ## Project Structure
 
 ```
 llmbridge/
 │
-├── main.py                 # Entry point, runs the GUI
+├── main.py                 # Entry point, handles both GUI and CLI modes
 ├── gui/
 │   ├── __init__.py
 │   └── application.py      # GUI-related code (Application class)
@@ -107,7 +129,8 @@ llmbridge/
 │   └── todo_scanner.py         # TODO/FIXME comment scanner
 ├── utils/
 │   ├── __init__.py
-│   └── file_operations.py  # File-related utility functions
+│   ├── file_operations.py  # File-related utility functions
+│   └── github_utils.py     # GitHub-related utility functions
 ├── config.py               # Configuration settings
 ├── requirements.txt        # Project dependencies
 └── README.md               # This file
@@ -135,7 +158,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - This project was developed as a collaborative effort with AI assistance.
-- Special thanks to the open-source communities behind Pygments and chardet.
+- Special thanks to the open-source communities behind Pygments, chardet, and GitPython.
 
 ---
 
@@ -151,7 +174,7 @@ GitPython==3.1.31
 
 Filename: todo.txt
 Language: Text only
-File Size: 1146 bytes
+File Size: 1116 bytes
 Content:
 1. Add docstrings to classes and functions:
 
@@ -187,21 +210,10 @@ TODO: follow pip8
 
 Filename: analysis\code_analyzer.py
 Language: Python
-File Size: 11355 bytes
+File Size: 11105 bytes
 Content:
-"""
-Code Analyzer Module for LLMBridge
-
-This module contains the core functionality for analyzing project code.
-It walks through project directories, collects various metrics, and
-generates a comprehensive analysis report.
-"""
-
 import os
-import shutil
-import tempfile
 from typing import Dict, Any, List, Tuple
-
 from .language_detection import LanguageDetector
 from .complexity import ComplexityAnalyzer
 from .duplication import DuplicationDetector
@@ -210,61 +222,31 @@ from utils.file_operations import FileUtils
 from config import Config
 
 class CodeAnalyzer:
-    """
-    Analyzes a project directory and generates a comprehensive report.
-
-    This class walks through a project directory, analyzing each file for various
-    metrics such as language usage, complexity, TODOs, and code duplication.
-    """
-
     def __init__(self, folder_path: str):
-        """
-        Initialize the CodeAnalyzer with the given project folder path.
-
-        Args:
-            folder_path (str): The path to the project directory to be analyzed.
-        """
         self.folder_path = FileUtils.normalize_path(folder_path)
-        self.is_temp_directory = folder_path.startswith(tempfile.gettempdir())
+        self.is_temp_directory = self.folder_path.startswith(FileUtils.normalize_path(os.path.join(os.getcwd(), 'temp')))
 
     def analyze(self, output_file: str) -> int:
-        """
-        Perform the analysis and write the report to the specified output file.
-
-        Args:
-            output_file (str): The path where the analysis report will be written.
-
-        Returns:
-            int: The number of code files analyzed.
-
-        Raises:
-            Exception: If there's an error during analysis or writing the report.
-        """
         try:
             analysis_results = self._collect_data()
             self._write_report(FileUtils.normalize_path(output_file), analysis_results)
             return analysis_results['file_count']
         finally:
             if self.is_temp_directory:
+                import shutil
                 shutil.rmtree(self.folder_path, ignore_errors=True)
 
     def _collect_data(self) -> Dict[str, Any]:
-        """
-        Collect analysis data by walking through the project directory.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing various analysis metrics.
-        """
         file_count = 0
         language_distribution = {}
         large_files: List[Tuple[str, int]] = []
         all_todos: List[Tuple[str, int, str]] = []
         all_complexities: List[Tuple[str, str, int]] = []
-        files_content: List[Tuple[str, str]] = []
+        files_content: List[Tuple[str, str, str, int]] = []  # Changed to include file size
 
         for root, _, files in os.walk(self.folder_path):
             for filename in files:
-                file_path = os.path.join(root, filename)
+                file_path = FileUtils.join_paths(root, filename)
                 try:
                     processed = self._process_file(file_path, language_distribution,
                                                    large_files, all_todos, all_complexities, files_content)
@@ -287,21 +269,11 @@ class CodeAnalyzer:
 
     def _process_file(self, file_path: str, language_distribution: Dict[str, int],
                       large_files: List[Tuple[str, int]], all_todos: List[Tuple[str, int, str]],
-                      all_complexities: List[Tuple[str, str, int]], files_content: List[Tuple[str, str]]) -> bool:
-        """
-        Process a single file, collecting various metrics.
+                      all_complexities: List[Tuple[str, str, int]], files_content: List[Tuple[str, str, str, int]]) -> bool:
+        if not FileUtils.file_exists(file_path):
+            print(f"Warning: File not found: {file_path}")
+            return False
 
-        Args:
-            file_path (str): Path to the file being processed.
-            language_distribution (Dict[str, int]): Distribution of programming languages.
-            large_files (List[Tuple[str, int]]): List of large files found.
-            all_todos (List[Tuple[str, int, str]]): List of TODO comments found.
-            all_complexities (List[Tuple[str, str, int]]): List of complexity metrics for functions.
-            files_content (List[Tuple[str, str]]): List of file contents for duplication analysis.
-
-        Returns:
-            bool: True if the file was successfully processed, False otherwise.
-        """
         language = LanguageDetector.guess_language(file_path)
         
         if language not in ["Unknown", "Binary"]:
@@ -317,7 +289,7 @@ class CodeAnalyzer:
 
             relative_path = FileUtils.get_relative_path(file_path, self.folder_path)
             content = FileUtils.read_file_content(file_path)
-            files_content.append((relative_path, content))
+            files_content.append((relative_path, content, language, file_size))  # Added language and file_size
 
             if language == "Python":
                 complexities = ComplexityAnalyzer.analyze_python_complexity(file_path)
@@ -327,37 +299,27 @@ class CodeAnalyzer:
         return False
 
     def _write_report(self, output_file: str, results: Dict[str, Any]):
-        """
-        Write the analysis report to the specified output file.
-
-        Args:
-            output_file (str): Path to the output file.
-            results (Dict[str, Any]): Analysis results to be written.
-        """
         with open(output_file, 'w', encoding='utf-8') as outfile:
             self._write_report_header(outfile)
-            self._write_file_analysis(outfile, results['files_content'], results['language_distribution'])
+            self._write_file_analysis(outfile, results['files_content'])
             self._write_summary(outfile, results)
             self._write_conclusion(outfile)
 
     def _write_report_header(self, outfile):
-        """Write the header section of the report."""
         outfile.write(f"Project Name: {os.path.basename(os.path.normpath(self.folder_path))}\n")
         outfile.write(f"Date of Analysis: {FileUtils.get_current_datetime()}\n\n")
         outfile.write("Analysis Report:\n\n")
 
-    def _write_file_analysis(self, outfile, files_content: List[Tuple[str, str]], language_distribution: Dict[str, int]):
-        """Write individual file analysis to the report."""
-        for file_path, content in files_content:
+    def _write_file_analysis(self, outfile, files_content: List[Tuple[str, str, str, int]]):
+        for file_path, content, language, file_size in files_content:
             outfile.write(f"Filename: {file_path}\n")
-            outfile.write(f"Language: {LanguageDetector.guess_language(file_path)}\n")
-            outfile.write(f"File Size: {FileUtils.get_file_size(file_path)} bytes\n")
+            outfile.write(f"Language: {language}\n")
+            outfile.write(f"File Size: {file_size} bytes\n")
             outfile.write("Content:\n")
             outfile.write(content)
             outfile.write("\n\n")
 
     def _write_summary(self, outfile, results: Dict[str, Any]):
-        """Write the summary section of the report."""
         file_count = results['file_count']
         outfile.write(f"Total number of code files: {file_count}\n\n")
         
@@ -376,7 +338,6 @@ class CodeAnalyzer:
         self._write_duplication_summary(outfile, results['duplicates'])
 
     def _write_large_files_summary(self, outfile, large_files: List[Tuple[str, int]]):
-        """Write summary of large files found."""
         if large_files:
             outfile.write("Large Files (>100KB):\n")
             for file_path, size in sorted(large_files, key=lambda x: x[1], reverse=True):
@@ -384,7 +345,6 @@ class CodeAnalyzer:
             outfile.write("\n")
 
     def _write_todos_summary(self, outfile, todos: List[Tuple[str, int, str]]):
-        """Write summary of TODO comments found."""
         if todos:
             outfile.write("All TODO/FIXME Comments:\n")
             for file_path, line_num, comment in todos:
@@ -392,7 +352,6 @@ class CodeAnalyzer:
             outfile.write("\n")
 
     def _write_complexity_summary(self, outfile, complexities: List[Tuple[str, str, int]]):
-        """Write summary of code complexity metrics."""
         if complexities:
             outfile.write(f"Top {Config.TOP_COMPLEX_FUNCTIONS} Most Complex Functions:\n")
             for file_path, func, complexity in sorted(complexities, key=lambda x: x[2], reverse=True)[:Config.TOP_COMPLEX_FUNCTIONS]:
@@ -400,7 +359,6 @@ class CodeAnalyzer:
             outfile.write("\n")
 
     def _write_duplication_summary(self, outfile, duplicates: List[Tuple[str, str, int, int, str]]):
-        """Write summary of code duplication found."""
         if duplicates:
             outfile.write("Potential Code Duplications:\n")
             for file1, file2, line1, line2, chunk in duplicates[:10]:
@@ -414,7 +372,6 @@ class CodeAnalyzer:
             outfile.write("\n")
 
     def _write_conclusion(self, outfile):
-        """Write concluding remarks and recommendations."""
         outfile.write("Conclusion and Recommendations:\n")
         outfile.write("1. Review and address TODO/FIXME comments\n")
         outfile.write("2. Consider refactoring complex functions\n")
@@ -423,27 +380,12 @@ class CodeAnalyzer:
         outfile.write("5. Ensure consistent coding style across different languages\n")
 
 def analyze_project(folder_path: str, output_file: str) -> int:
-    """
-    Analyze a project and generate a report.
-
-    This function creates a CodeAnalyzer instance and runs the analysis.
-
-    Args:
-        folder_path (str): The path to the project directory to be analyzed.
-        output_file (str): The path where the analysis report will be written.
-
-    Returns:
-        int: The number of code files analyzed.
-
-    Raises:
-        Exception: If there's an error during analysis or writing the report.
-    """
     analyzer = CodeAnalyzer(folder_path)
     return analyzer.analyze(output_file)
 
 Filename: analysis\complexity.py
 Language: Python
-File Size: 1156 bytes
+File Size: 1129 bytes
 Content:
 import ast
 from typing import List, Tuple
@@ -476,7 +418,7 @@ class ComplexityAnalyzer:
 
 Filename: analysis\duplication.py
 Language: Python
-File Size: 989 bytes
+File Size: 966 bytes
 Content:
 import hashlib
 from typing import List, Tuple
@@ -505,7 +447,7 @@ class DuplicationDetector:
 
 Filename: analysis\language_detection.py
 Language: Python
-File Size: 639 bytes
+File Size: 622 bytes
 Content:
 from pygments.lexers import guess_lexer_for_filename
 from pygments.util import ClassNotFound
@@ -528,7 +470,7 @@ class LanguageDetector:
 
 Filename: analysis\todo_scanner.py
 Language: Python
-File Size: 506 bytes
+File Size: 492 bytes
 Content:
 import re
 from typing import List, Tuple
@@ -548,7 +490,7 @@ class TodoScanner:
 
 Filename: gui\application.py
 Language: Python
-File Size: 5810 bytes
+File Size: 5669 bytes
 Content:
 """
 GUI Application for LLMBridge
@@ -695,11 +637,11 @@ class Application(tk.Frame):
 
 Filename: utils\file_operations.py
 Language: Python
-File Size: 1561 bytes
+File Size: 1519 bytes
 Content:
-from datetime import datetime
 import os
 import pathlib
+from datetime import datetime
 
 class FileUtils:
     @staticmethod
@@ -708,42 +650,51 @@ class FileUtils:
 
     @staticmethod
     def get_file_size(file_path: str) -> int:
+        print(f"trying to get file size of: {file_path}")
         try:
-            return os.path.getsize(FileUtils.normalize_path(file_path))
-        except FileNotFoundError:
-            print(f"Warning: File not found: {file_path}")
+            return os.path.getsize(file_path)
+        except OSError as e:
+            print(f"Warning: Unable to get file size for {file_path}: {str(e)}")
             return 0
 
     @staticmethod
     def read_file_content(file_path: str) -> str:
         try:
-            with open(FileUtils.normalize_path(file_path), 'r', encoding='utf-8') as file:
+            with open(file_path, 'r', encoding='utf-8') as file:
                 return file.read()
-        except FileNotFoundError:
-            print(f"Warning: File not found: {file_path}")
-            return f"[File not found: {file_path}]"
+        except OSError as e:
+            print(f"Warning: Unable to read file {file_path}: {str(e)}")
+            return f"[Unable to read file: {file_path}]"
         except UnicodeDecodeError:
             return "[Binary content]"
 
     @staticmethod
     def get_project_name(folder_path: str) -> str:
-        return os.path.basename(FileUtils.normalize_path(folder_path))
+        return os.path.basename(folder_path)
 
     @staticmethod
     def get_default_output_path(folder_path: str, project_name: str) -> str:
-        return FileUtils.normalize_path(os.path.join(folder_path, f"{project_name}_analysis.txt"))
+        return os.path.join(folder_path, f"{project_name}_analysis.txt")
 
     @staticmethod
     def get_relative_path(file_path: str, base_path: str) -> str:
-        return os.path.relpath(FileUtils.normalize_path(file_path), FileUtils.normalize_path(base_path))
+        return os.path.relpath(file_path, base_path)
     
     @staticmethod
     def get_current_datetime() -> str:
         return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+    @staticmethod
+    def file_exists(file_path: str) -> bool:
+        return os.path.isfile(file_path)
+
+    @staticmethod
+    def join_paths(base_path: str, *paths: str) -> str:
+        return os.path.join(base_path, *paths)
+
 Filename: utils\github_utils.py
 Language: Python
-File Size: 774 bytes
+File Size: 750 bytes
 Content:
 import re
 import tempfile
@@ -780,27 +731,25 @@ Text only: 2 files (15.38%)
 
 All TODO/FIXME Comments:
 readme.md (Line 12): - **TODO/FIXME Tracking**: Identifies and collates all TODO and FIXME comments across your project.
-readme.md (Line 58): │   └── todo_scanner.py         # TODO/FIXME comment scanner
-readme.md (Line 73): - **Text Analysis**: Searches for specific patterns like TODO/FIXME comments.
+readme.md (Line 68): │   └── todo_scanner.py         # TODO/FIXME comment scanner
+readme.md (Line 84): - **Text Analysis**: Searches for specific patterns like TODO/FIXME comments.
 todo.txt (Line 31): TODO: follow pip8
-analysis\code_analyzer.py (Line 107): all_todos (List[Tuple[str, int, str]]): List of TODO comments found.
-analysis\code_analyzer.py (Line 125): all_todos.extend([(file_path, *todo) for todo in todos])
-analysis\code_analyzer.py (Line 196): """Write summary of TODO comments found."""
-analysis\code_analyzer.py (Line 198): outfile.write("All TODO/FIXME Comments:\n")
-analysis\code_analyzer.py (Line 228): outfile.write("1. Review and address TODO/FIXME comments\n")
+analysis\code_analyzer.py (Line 74): all_todos.extend([(file_path, *todo) for todo in todos])
+analysis\code_analyzer.py (Line 135): outfile.write("All TODO/FIXME Comments:\n")
+analysis\code_analyzer.py (Line 162): outfile.write("1. Review and address TODO/FIXME comments\n")
 analysis\todo_scanner.py (Line 11): if re.search(r'\b(TODO|FIXME)\b', line, re.IGNORECASE):
 
 Top 10 Most Complex Functions:
-analysis\code_analyzer.py - CodeAnalyzer: Complexity 22
+analysis\code_analyzer.py - CodeAnalyzer: Complexity 23
 gui\application.py - Application: Complexity 8
 analysis\complexity.py - ComplexityAnalyzer: Complexity 7
+analysis\code_analyzer.py - _process_file: Complexity 6
 analysis\code_analyzer.py - _collect_data: Complexity 5
-analysis\code_analyzer.py - _process_file: Complexity 5
 analysis\duplication.py - DuplicationDetector: Complexity 5
 analysis\duplication.py - detect_code_duplication: Complexity 5
 gui\application.py - analyze_project: Complexity 5
+main.py - main: Complexity 4
 analysis\code_analyzer.py - _write_duplication_summary: Complexity 4
-analysis\complexity.py - analyze_python_complexity: Complexity 4
 
 Conclusion and Recommendations:
 1. Review and address TODO/FIXME comments
@@ -808,7 +757,3 @@ Conclusion and Recommendations:
 3. Investigate and resolve potential code duplications
 4. Optimize large files if possible
 5. Ensure consistent coding style across different languages
-
-
-
-We need to add a way to see in the gui what the program is doing while it is analysing a project.
