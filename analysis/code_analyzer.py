@@ -1,4 +1,6 @@
 import os
+import shutil
+import tempfile
 from typing import Dict, Any
 from .language_detection import LanguageDetector
 from .complexity import ComplexityAnalyzer
@@ -7,18 +9,20 @@ from .todo_scanner import TodoScanner
 from utils.file_operations import FileUtils
 from config import Config
 
-def analyze_project(folder_path: str, output_file: str) -> int:
-    analyzer = CodeAnalyzer(folder_path)
-    return analyzer.analyze(output_file)
 
 class CodeAnalyzer:
     def __init__(self, folder_path: str):
         self.folder_path = FileUtils.normalize_path(folder_path)
+        self.is_temp = folder_path.startswith(tempfile.gettempdir())
 
     def analyze(self, output_file: str) -> int:
-        results = self._collect_data()
-        self._write_report(FileUtils.normalize_path(output_file), results)
-        return results['file_count']
+        try:
+            results = self._collect_data()
+            self._write_report(FileUtils.normalize_path(output_file), results)
+            return results['file_count']
+        finally:
+            if self.is_temp:
+                shutil.rmtree(self.folder_path, ignore_errors=True)
 
     def _collect_data(self) -> Dict[str, Any]:
         file_count = 0
@@ -135,3 +139,8 @@ class CodeAnalyzer:
         outfile.write("3. Investigate and resolve potential code duplications\n")
         outfile.write("4. Optimize large files if possible\n")
         outfile.write("5. Ensure consistent coding style across different languages\n")
+
+
+def analyze_project(folder_path: str, output_file: str) -> int:
+    analyzer = CodeAnalyzer(folder_path)
+    return analyzer.analyze(output_file)
