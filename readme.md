@@ -1,10 +1,9 @@
 # LLMBridge
+This software is made with ClaudeAI. It started as a quick way to restart a chat when working with project with many files, and have turn into a bit of an experiment. Many of the added features are ClaudeAIs idea of what could be helpful for an LLM. It also wrote most of this readme after this paragraph. It might be overplaying it a little.
 
 ![LLMBridge Logo](logo.png)
 
 LLMBridge is a comprehensive, language-agnostic code analysis tool designed to prepare project codebases for analysis by Large Language Models (LLMs). It provides deep insights into your project structure, code complexity, and potential areas for improvement.
-
-This software is made with ClaudeAI. It started as a quick way to restart a chat when working with project with many files. Many of the added features are ClaudeAIs idea of what could be helpful for an LLM. It also wrote most of this readme
 
 
 ## Features
