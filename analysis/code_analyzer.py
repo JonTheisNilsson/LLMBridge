@@ -1,4 +1,5 @@
 import os
+import fnmatch
 from typing import Dict, Any, List, Tuple
 from .language_detection import LanguageDetector
 from .complexity import ComplexityAnalyzer
@@ -11,7 +12,28 @@ class CodeAnalyzer:
     def __init__(self, folder_path: str):
         self.folder_path = FileUtils.normalize_path(folder_path)
         self.is_temp_directory = self.folder_path.startswith(FileUtils.normalize_path(os.path.join(os.getcwd(), 'temp')))
+        self.gitignore_patterns = self._load_gitignore()
 
+    def _load_gitignore(self) -> List[str]:
+        gitignore_path = os.path.join(self.folder_path, '.gitignore')
+        if os.path.exists(gitignore_path):
+            with open(gitignore_path, 'r') as f:
+                return [line.strip() for line in f if line.strip() and not line.startswith('#')]
+        return []
+
+    def _should_ignore(self, path: str) -> bool:
+        relative_path = os.path.relpath(path, self.folder_path)
+        
+        # Ignore folders starting with a dot
+        if any(part.startswith('.') for part in relative_path.split(os.sep)):
+            return True
+        
+        # Check against gitignore patterns
+        for pattern in self.gitignore_patterns:
+            if fnmatch.fnmatch(relative_path, pattern):
+                return True
+        
+        return False
     def analyze(self, output_file: str) -> int:
         try:
             analysis_results = self._collect_data()
@@ -28,11 +50,16 @@ class CodeAnalyzer:
         large_files: List[Tuple[str, int]] = []
         all_todos: List[Tuple[str, int, str]] = []
         all_complexities: List[Tuple[str, str, int]] = []
-        files_content: List[Tuple[str, str, str, int]] = []  # Changed to include file size
+        files_content: List[Tuple[str, str, str, int]] = []
 
-        for root, _, files in os.walk(self.folder_path):
+        for root, dirs, files in os.walk(self.folder_path):
+            # Remove directories that should be ignored
+            dirs[:] = [d for d in dirs if not self._should_ignore(os.path.join(root, d))]
+
             for filename in files:
                 file_path = FileUtils.join_paths(root, filename)
+                if self._should_ignore(file_path):
+                    continue
                 try:
                     processed = self._process_file(file_path, language_distribution,
                                                    large_files, all_todos, all_complexities, files_content)
@@ -52,6 +79,7 @@ class CodeAnalyzer:
             'duplicates': code_duplicates,
             'files_content': files_content
         }
+
 
     def _process_file(self, file_path: str, language_distribution: Dict[str, int],
                       large_files: List[Tuple[str, int]], all_todos: List[Tuple[str, int, str]],
