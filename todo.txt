@@ -27,7 +27,8 @@ file_operations.py
 github_utils.py
 config.py
 
-ADD: testing, unittesting, test suite
+ADD: testing, unittesting, test suite. NOTE: clause will ignore this and not put it in code output. it should properly be done last.
 TODO: follow pip8
 change name
 make a tree diagram over the structure of the project
+BUG: the analysis considers txt and md as different programming languages. it properly just consider all different extensions as a language.
