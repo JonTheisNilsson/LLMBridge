@@ -34,6 +34,7 @@ class CodeAnalyzer:
                 return True
         
         return False
+    
     def analyze(self, output_file: str) -> int:
         try:
             analysis_results = self._collect_data()
@@ -117,7 +118,7 @@ class CodeAnalyzer:
             self._write_report_header(outfile)
             self._write_file_analysis(outfile, results['files_content'])
             self._write_summary(outfile, results)
-            self._write_conclusion(outfile)
+            self._write_conclusion(outfile,results)
 
     def _write_report_header(self, outfile):
         outfile.write(f"Project Name: {os.path.basename(os.path.normpath(self.folder_path))}\n")
@@ -184,14 +185,61 @@ class CodeAnalyzer:
             if len(duplicates) > 10:
                 outfile.write(f"... and {len(duplicates) - 10} more duplications\n")
             outfile.write("\n")
-
-    def _write_conclusion(self, outfile):
+    
+    def _write_conclusion(self, outfile, results: Dict[str, Any]):
         outfile.write("Conclusion and Recommendations:\n")
-        outfile.write("1. Review and address TODO/FIXME comments\n")
-        outfile.write("2. Consider refactoring complex functions\n")
-        outfile.write("3. Investigate and resolve potential code duplications\n")
-        outfile.write("4. Optimize large files if possible\n")
-        outfile.write("5. Ensure consistent coding style across different languages\n")
+        
+        # Language distribution analysis
+        primary_language = max(results['language_distribution'], key=results['language_distribution'].get)
+        language_count = len(results['language_distribution'])
+        outfile.write(f"1. Language Distribution: The project primarily uses {primary_language} ")
+        outfile.write(f"({results['language_distribution'][primary_language]} files) ")
+        outfile.write(f"out of {results['file_count']} total files. ")
+        if language_count > 1:
+            outfile.write(f"The project is multilingual, using {language_count} different languages. ")
+            outfile.write("Consider standardizing on fewer languages if possible to improve maintainability.\n")
+        else:
+            outfile.write("The project consistently uses a single language, which is good for maintainability.\n")
+
+        # TODO/FIXME analysis
+        todo_count = len(results['todos'])
+        if todo_count > 0:
+            outfile.write(f"2. TODO/FIXME Comments: There are {todo_count} TODO/FIXME comments in the project. ")
+            outfile.write("Consider addressing these issues to improve code quality and completeness.\n")
+        else:
+            outfile.write("2. TODO/FIXME Comments: No TODO/FIXME comments found. Good job keeping the codebase clean!\n")
+
+        # Complexity analysis
+        if results['complexities']:
+            max_complexity = max(results['complexities'], key=lambda x: x[2])
+            outfile.write(f"3. Code Complexity: The most complex function is '{max_complexity[1]}' ")
+            outfile.write(f"in file '{max_complexity[0]}' with a complexity of {max_complexity[2]}. ")
+            outfile.write("Consider refactoring complex functions to improve readability and maintainability.\n")
+        else:
+            outfile.write("3. Code Complexity: No complexity issues detected in the analyzed files.\n")
+
+        # Duplication analysis
+        duplication_count = len(results['duplicates'])
+        if duplication_count > 0:
+            outfile.write(f"4. Code Duplication: Detected {duplication_count} instances of potential code duplication. ")
+            outfile.write("Review and refactor these areas to improve code maintainability and reduce redundancy.\n")
+        else:
+            outfile.write("4. Code Duplication: No significant code duplication detected. Great job keeping the code DRY!\n")
+
+        # Large files analysis
+        large_file_count = len(results['large_files'])
+        if large_file_count > 0:
+            outfile.write(f"5. Large Files: Identified {large_file_count} large files (>100KB). ")
+            outfile.write("Consider breaking down large files into smaller, more manageable modules.\n")
+        else:
+            outfile.write("5. Large Files: No excessively large files detected. Good job keeping file sizes manageable.\n")
+
+        # General recommendations
+        outfile.write("6. General Recommendations:\n")
+        outfile.write("   - Regularly review and update dependencies to ensure security and performance.\n")
+        outfile.write("   - Implement or improve unit testing to maintain code quality.\n")
+        outfile.write("   - Consider using static code analysis tools for ongoing code quality checks.\n")
+        outfile.write("   - Maintain up-to-date documentation for better project understanding and onboarding.\n")
 
 def analyze_project(folder_path: str, output_file: str) -> int:
     analyzer = CodeAnalyzer(folder_path)
