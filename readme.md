@@ -1,4 +1,4 @@
-This software is created with ClaudeAI. It started as a quick way to restart a chat when working with project with many files, and have turn into a bit of an experiment. Many of the added features are ClaudeAIs idea of what could be helpful for an LLM. It also wrote most of this readme after this paragraph. It might be overplaying it a little.
+This software is created with ClaudeAI. It started as a quick way to restart a chat when working with project with many files, and have turn into a bit of an experiment. Many of the added features are ClaudeAIs idea of what could be helpful for an LLM. It also wrote most of this readme after this paragraph. It might be overselling it a little.
 
 ![00005-81533553](https://github.com/JonTheisNilsson/LLMBridge/assets/14968184/afeb0948-e615-493e-806b-f67ecc03fb47)
 # LLMBridge
@@ -14,6 +14,8 @@ LLMBridge is a comprehensive, language-agnostic code analysis tool designed to p
 - **Complexity Analysis**: For Python files, calculates complexity metrics for functions and classes.
 - **User-Friendly GUI**: Easy-to-use graphical interface for selecting projects and configuring analysis.
 - **Command-Line Interface**: Supports running analysis from the command line for automation and integration into other tools.
+- **Gitignore Support**: Respects .gitignore files in your project, excluding ignored files and directories from analysis.
+- **Dot Folder Exclusion**: Automatically skips folders that start with a dot (hidden folders).
 
 ## Installation
 
@@ -83,6 +85,8 @@ LLMBridge walks through your project directory, analyzing each file it encounter
 - **Code Parsing**: For supported languages (currently Python), it parses the code to extract structural information.
 - **Text Analysis**: Searches for specific patterns like TODO/FIXME comments.
 - **Metrics Calculation**: Computes various metrics like file sizes and code complexity.
+- **Gitignore Handling**: Respects your project's .gitignore file, skipping ignored files and directories.
+- **Hidden Folder Exclusion**: Automatically skips folders starting with a dot.
 
 The collected information is then formatted into a comprehensive report, designed to provide context and insights for LLMs to perform further analysis.
 
